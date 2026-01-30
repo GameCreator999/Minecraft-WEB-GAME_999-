@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WyrmGate Mobile</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; }
+        #ui { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; pointer-events: none; }
+        .btn { 
+            width: 90px; height: 90px; background: rgba(0,0,0,0.5); 
+            border: 3px solid white; border-radius: 50%; pointer-events: auto;
+            display: flex; align-items: center; justify-content: center; color: white; font-family: sans-serif; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="walk" class="btn">WALK</div>
+        <div id="jump" class="btn">JUMP</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+        import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/GLTFLoader.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 5000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // --- POWERFUL LIGHTING ---
+        scene.add(new THREE.AmbientLight(0xffffff, 2.5)); 
+        const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+        sun.position.set(10, 20, 10);
+        scene.add(sun);
+
+        // --- DIRECT LINKS (FIXED) ---
+        const charURL = 'https://files.catbox.moe/li1liw.glb';
+        const worldURL = 'https://files.catbox.moe/cw9yc0.glb';
+
+        const loader = new GLTFLoader();
+        let player, world;
+
+        // Load World (Village)
+        loader.load(worldURL, (gltf) => {
+            world = gltf.scene;
+            scene.add(world);
+            // I increased the scale to 10!
+            world.scale.set(10, 10, 10); 
+            console.log("World Loaded at Scale 10");
+        });
+
+        // Load Character
+        loader.load(charURL, (gltf) => {
+            player = gltf.scene;
+            scene.add(player);
+            // I increased the character scale to 5!
+            player.scale.set(5, 5, 5);
+            player.position.set(0, 0, 0);
+            console.log("Character Loaded at Scale 5");
+        });
+
+        // Movement Logic
+        let isWalking = false;
+        let vY = 0;
+        document.getElementById('walk').ontouchstart = () => { isWalking = true; };
+        document.getElementById('walk').ontouchend = () => { isWalking = false; };
+        document.getElementById('jump').ontouchstart = () => { if(player && player.position.y <= 0.1) vY = 0.3; };
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (player) {
+                if (isWalking) player.translateZ(0.3); // Speed increased
+                
+                // Gravity Logic
+                player.position.y += vY;
+                if(player.position.y > 0) vY -= 0.015;
+                else { player.position.y = 0; vY = 0; }
+
+                // Follow Camera (Positioned behind the scaled-up player)
+                camera.position.set(player.position.x, player.position.y + 15, player.position.z - 30);
+                camera.lookAt(player.position);
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
